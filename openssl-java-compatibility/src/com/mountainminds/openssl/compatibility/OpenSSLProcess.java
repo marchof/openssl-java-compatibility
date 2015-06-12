@@ -22,13 +22,13 @@ public class OpenSSLProcess {
 		this.proc = proc;
 	}
 
-	public void assertExitStatus() throws InterruptedException {
+	public void assertExitStatus() throws InterruptedException, IOException {
 		assertExitStatus(0);
 	}
 
 	public void assertExitStatus(int expectedStatus)
-			throws InterruptedException {
-		assertEquals(expectedStatus, proc.waitFor());
+			throws InterruptedException, IOException {
+		assertEquals(getErrAsString(), expectedStatus, proc.waitFor());
 	}
 
 	public void sendIn(byte[] data) throws IOException {

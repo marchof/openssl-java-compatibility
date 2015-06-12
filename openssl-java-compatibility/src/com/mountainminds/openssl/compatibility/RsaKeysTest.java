@@ -8,7 +8,10 @@ import java.security.spec.X509EncodedKeySpec;
 
 import org.junit.Test;
 
-public class RsaTest extends ExternalCommandTestBase {
+/**
+ * Exchanging Public/Private Keys between OpenSSL and Java.
+ */
+public class RsaKeysTest extends ExternalCommandTestBase {
 
 	@Test
 	public void readOpensslKeysWithJava() throws Exception {
@@ -34,14 +37,14 @@ public class RsaTest extends ExternalCommandTestBase {
 		byte[] publicKeyDER = proc.getOutAsBytes();
 		proc.assertExitStatus();
 
-		// Read Keys with Java
-
 		KeyFactory kf = KeyFactory.getInstance("RSA");
 
+		// Read Private Key with Java
 		PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(
 				privateKeyPKCS8);
 		kf.generatePrivate(privateSpec);
 
+		// Read Public Key with Java
 		X509EncodedKeySpec publicSpec = new X509EncodedKeySpec(publicKeyDER);
 		kf.generatePublic(publicSpec);
 	}
@@ -52,14 +55,32 @@ public class RsaTest extends ExternalCommandTestBase {
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 		keyGen.initialize(1024);
 		KeyPair keypair = keyGen.genKeyPair();
-		byte[] publicKeyDER = keypair.getPublic().getEncoded();
 		byte[] privateKeyPKCS8 = keypair.getPrivate().getEncoded();
+		byte[] publicKeyDER = keypair.getPublic().getEncoded();
 
-		openssl("rsa", "-text", "-pubin", "-inform", "DER");
-		proc.sendIn(publicKeyDER);
+		// Convert Private Key to PEM Format for OpenSSL
+		openssl("pkcs8", "-inform", "DER", "-outform", "PEM", "-nocrypt");
+		proc.sendIn(privateKeyPKCS8);
+		String privateKeyPEM = proc.getOutAsString();
 		proc.assertExitStatus();
 
-		// TODO: Read Private Key with OpenSSL
+		// Convert Public Key to PEM Format for OpenSSL
+		openssl("rsa", "-pubin", "-inform", "DER", "-outform", "PEM");
+		proc.sendIn(publicKeyDER);
+		String publicKeyPEM = proc.getOutAsString();
+		proc.assertExitStatus();
+
+		// Dump Private Key
+		openssl("rsa", "-text");
+		proc.sendIn(privateKeyPEM);
+		System.out.println(proc.getOutAsString());
+		proc.assertExitStatus();
+
+		// Dump Public Key
+		openssl("rsa", "-pubin", "-text");
+		proc.sendIn(publicKeyPEM);
+		System.out.println(proc.getOutAsString());
+		proc.assertExitStatus();
 	}
 
 }

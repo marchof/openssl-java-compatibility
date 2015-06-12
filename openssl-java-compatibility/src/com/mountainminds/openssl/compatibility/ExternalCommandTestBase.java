@@ -1,6 +1,10 @@
 package com.mountainminds.openssl.compatibility;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Random;
 
 import org.junit.After;
@@ -21,7 +25,7 @@ public abstract class ExternalCommandTestBase {
 	public final TemporaryFolder workdir = new TemporaryFolder();
 
 	@Before
-	public void before() {
+	public void before() throws Exception {
 		// deterministic "random" data
 		random = new Random(42);
 	}
@@ -60,6 +64,22 @@ public abstract class ExternalCommandTestBase {
 			buffer.append(Character.forDigit(0x0f & b, 16));
 		}
 		return buffer.toString();
+	}
+
+	protected String file(String localname) {
+		return new File(workdir.getRoot(), localname).getAbsolutePath();
+	}
+
+	protected byte[] readFile(String localname) throws IOException {
+		File file = new File(workdir.getRoot(), localname);
+		InputStream in = new FileInputStream(file);
+		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+		int b;
+		while ((b = in.read()) != -1) {
+			buffer.write(b);
+		}
+		in.close();
+		return buffer.toByteArray();
 	}
 
 }
